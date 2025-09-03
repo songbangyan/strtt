@@ -39,7 +39,7 @@ Program is using a refactored driver from the openocd project.
 
 ./strtt
 
-# If you want to connect your App in Debug running then share your stlink and use tcp connect to
+# If you want to connect to RTT while debugging in your IDE share stlink and use tcp
 
 ./strtt -ramstart 0x30020000 -tcp
 
