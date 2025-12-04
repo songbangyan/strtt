@@ -6,6 +6,7 @@
 #include "strtt.h"
 #include "log.h"
 #include "inputparser.h"
+#include "consoleinput.h"
 
 // #define SYSVIEW
 
@@ -14,18 +15,9 @@
 #endif
 
 #ifdef __linux__
-
 #include <sys/resource.h>
-#include "kbhit.h"
-
-#elif __APPLE__
-#include <sys/resource.h>
-#include "kbhit.h"
-#elif _WIN32
-#include <conio.h>
-#else
-
 #endif
+
 
 // CONST //////////////////////////////////////////////////
 
@@ -81,7 +73,7 @@ int main(int argc, char **argv)
     if (input.cmdOptionExists("-ramsize"))
     {
         std::string opt = input.getCmdOption("-ramsize");
-        if(opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X'))
+        if (opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X'))
         {
             _ramKB = std::stoi(opt, nullptr, 16);
         }
@@ -102,7 +94,7 @@ int main(int argc, char **argv)
     {
         // get ram start from options, value maybe hex or dec
         std::string opt = input.getCmdOption("-ramstart");
-        if(opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X'))
+        if (opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X'))
         {
             _ramStart = std::stoi(opt, nullptr, 16);
         }
@@ -185,6 +177,7 @@ int main(int argc, char **argv)
 #endif
                              });
 
+    ConsoleInput console;
     std::vector<uint8_t> str;
     double _duration;
     while (!stopApp)
@@ -201,9 +194,9 @@ int main(int argc, char **argv)
         }
 
         // read console
-        while (_kbhit())
+        while (console.isChar())
         {
-            uint8_t ch = _getch();
+            uint8_t ch = console.getChar();
             str.push_back(ch);
         }
 
