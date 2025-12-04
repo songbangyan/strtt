@@ -112,8 +112,10 @@ private:
 
     // special ramStart
     uint32_t ramStart;
+    // ap number
+    uint8_t apNum;
 public:
-    StRtt(uint32_t start = RAM_START);
+    StRtt(uint32_t start = RAM_START, uint8_t apNum = 0);
     ~StRtt();
 
     int open(bool use_tcp, uint16_t port_tcp = STLINK_TCP_PORT);
