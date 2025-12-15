@@ -53,7 +53,7 @@ else()
 
 endif()
 
-add_custom_command(
-    TARGET strtt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:strtt> ${CMAKE_CURRENT_SOURCE_DIR}/../../
-)
+# add_custom_command(
+#     TARGET strtt POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:strtt> ${CMAKE_CURRENT_SOURCE_DIR}/../../
+# )

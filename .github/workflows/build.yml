@@ -1,0 +1,97 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  release:
+    types: [ created ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: strtt
+            artifact_path: build/src/rtt/strtt
+          - os: windows-latest
+            artifact_name: strtt.exe
+            artifact_path: build/src/rtt/strtt.exe
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libusb-1.0-0-dev cmake build-essential
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install cmake mingw --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+    - name: Download and setup libusb (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        curl -L -o libusb.7z https://github.com/libusb/libusb/releases/download/v1.0.27/libusb-1.0.27.7z
+        7z x libusb.7z -olibusb
+
+    - name: Configure CMake (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        LIBUSB_ROOT="$(pwd)/libusb"
+        mkdir -p build
+        cd build
+        cmake .. -G "MinGW Makefiles" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLIBUSB_INCLUDE_DIR:PATH="$LIBUSB_ROOT/include" \
+          -DLIBUSB_LIBRARY:FILEPATH="$LIBUSB_ROOT/MinGW64/static/libusb-1.0.dll.a"
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+
+    - name: Copy libusb DLL (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        cp libusb/MinGW64/dll/libusb-1.0.dll build/src/rtt/
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}-executable
+        path: ${{ matrix.artifact_path }}
+        if-no-files-found: error
+
+    - name: Upload release asset
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ${{ matrix.artifact_path }}
+        asset_name: strtt-${{ github.ref_name }}-${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        asset_content_type: application/octet-stream
