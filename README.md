@@ -7,9 +7,11 @@ Options:
 
 **-ramstart** Ram Start address where the program is looking for RTT( **hex**,dec model supported).
 
-**-ramsize** ramAmmount where ramAmmount is the range where the program is looking for RTT. 
+**-ramsize** ramAmmount where ramAmmount is the range where the program is looking for RTT.
 
 **-tcp** use tcp connection to st-link gdb server (<https://www.st.com/en/development-tools/st-link-server.html>)
+
+**-ap** select the AP number to use (default 0), some devices have multiple APs, for example STM32H5 and STM32H7 need set AP to 1.
 
 # Windows
 
@@ -20,7 +22,7 @@ Folder windows_bin_64 includes windows 64 bit executable. If the program returns
 Thanks to the **-tcp** option it is possible to communicate with a target using the RTT channel while debugging in STM32CubeIDE.
 In debug options "Shared ST-LINK" must be checked.
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=MP6PS8l4fyE" target="_blank"><img src="http://img.youtube.com/vi/MP6PS8l4fyE/0.jpg" 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=MP6PS8l4fyE" target="_blank"><img src="http://img.youtube.com/vi/MP6PS8l4fyE/0.jpg"
 alt="RTT and STM32CubeIDE" width="480" height="360" border="10" /></a>
 
 # Using with VSCode and cortex-debug

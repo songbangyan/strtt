@@ -116,7 +116,13 @@ int main(int argc, char **argv)
         useTCP = true;
     }
 
-    StRtt *strtt = new StRtt(_ramStart);
+    uint8_t apNum = 0;
+    if (input.cmdOptionExists("-ap"))
+    {
+        apNum = std::stoi(input.getCmdOption("-ap"));
+    }
+
+    StRtt *strtt = new StRtt(_ramStart, apNum);
 
     // open stLink
     int res = strtt->open(useTCP);

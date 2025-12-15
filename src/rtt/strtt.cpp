@@ -36,8 +36,8 @@
  * @brief Construct a new St Rtt:: St Rtt object
  *
  */
-StRtt::StRtt(uint32_t start)
-    :    ramStart(start)
+StRtt::StRtt(uint32_t start, uint8_t apNum)
+    :    ramStart(start), apNum(apNum)
 {
     this->init();
 }
@@ -84,6 +84,8 @@ void StRtt::init()
     this->_param.initial_interface_speed = STLINK_SPEED;
 
     this->_param.connect_under_reset = false;
+
+    this->_param.ap_num = this->apNum;
 }
 
 /**

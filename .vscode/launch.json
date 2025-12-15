@@ -5,17 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Msys2",
+            "name": "Debug mingw",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/src/rtt/strtt.exe",
-            "args": ["-v","4"],
+            "args": [
+                "-v",
+                "4",
+            ],
             "stopAtEntry": true,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "c:\\msys64\\mingw64\\bin\\gdb.exe",
+            "miDebuggerPath": "C:\\msys64\\mingw64\\bin\\gdb.exe",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -42,9 +45,12 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [
-                "-ram","32",
-                "-v", "4",
-                "-tcp", "-t"
+                "-ram",
+                "32",
+                "-v",
+                "4",
+                "-tcp",
+                "-t"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

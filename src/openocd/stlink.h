@@ -79,6 +79,7 @@ extern "C"
         bool use_stlink_tcp;
         /** */
         uint16_t stlink_tcp_port;
+        uint8_t ap_num;
     };
 
     struct hl_interface_s
