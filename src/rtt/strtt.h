@@ -36,11 +36,19 @@
 
 #define STLINK_SPEED (24 * 1000)
 
+/* MSVC doesn't support __attribute__ - use #pragma pack instead */
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
+
 //
 // Description for a circular buffer (also called "ring buffer")
 // which is used as up-buffer (T->H)
 //
-typedef struct __attribute__((__packed__))
+typedef struct
+#ifndef _MSC_VER
+__attribute__((__packed__))
+#endif
 {
     uint32_t sName;        // Optional name. Standard names so far are: "Terminal", "SysView", "J-Scope_t4i4"
     uint32_t pBuffer;      // Pointer to start of buffer
@@ -55,13 +63,20 @@ typedef struct __attribute__((__packed__))
 // as well as the configuration for each buffer
 //
 //
-typedef struct __attribute__((__packed__))
+typedef struct
+#ifndef _MSC_VER
+__attribute__((__packed__))
+#endif
 {
     char acID[16];                // Initialized to "SEGGER RTT"
     uint32_t MaxNumUpBuffers;     // Initialized to SEGGER_RTT_MAX_NUM_UP_BUFFERS (type. 2)
     uint32_t MaxNumDownBuffers;   // Initialized to SEGGER_RTT_MAX_NUM_DOWN_BUFFERS (type. 2)
     SEGGER_RTT_BUFFER buffDesc[]; // Up/Down buffers, transferring information up/down from target via debug probe to host
 } SEGGER_RTT_CB;
+
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 //
 //

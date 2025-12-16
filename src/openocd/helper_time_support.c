@@ -25,16 +25,26 @@
 #include "helper_time_support.h"
 
 #include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/time.h>
+#endif
 
 /* simple and low overhead fetching of ms counter. Use only
  * the difference between ms counters returned from this fn.
  */
 int64_t timeval_ms(void)
 {
+#ifdef _WIN32
+	/* Windows implementation using GetTickCount64 (available since Vista) */
+	return (int64_t)GetTickCount64();
+#else
 	struct timeval now;
 	int retval = gettimeofday(&now, NULL);
 	if (retval < 0)
 		return retval;
 	return (int64_t)now.tv_sec * 1000 + now.tv_usec / 1000;
+#endif
 }

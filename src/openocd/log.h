@@ -34,11 +34,17 @@ extern "C"
 
 /* To achieve C99 printf compatibility in MinGW, gnu_printf should be
  * used for __attribute__((format( ... ))), with GCC v4.4 or later
+ * MSVC does not support __attribute__, so this only applies to GCC/MinGW
  */
-#if (defined(IS_MINGW) && (((__GNUC__ << 16) + __GNUC_MINOR__) >= 0x00040004))
+#if (defined(__MINGW32__) && defined(__GNUC__) && (((__GNUC__ << 16) + __GNUC_MINOR__) >= 0x00040004))
 #define PRINTF_ATTRIBUTE_FORMAT gnu_printf
 #else
 #define PRINTF_ATTRIBUTE_FORMAT printf
+#endif
+
+/* MSVC doesn't support __attribute__ - define it away */
+#ifdef _MSC_VER
+#define __attribute__(x)
 #endif
 
 /* logging priorities
@@ -94,41 +100,41 @@ void keep_alive(void);
 
 #define LOG_LEVEL_IS(FOO) ((debug_level) >= (FOO))
 
-#define LOG_DEBUG_IO(expr...)                           \
+#define LOG_DEBUG_IO(...)                               \
 	do                                                  \
 	{                                                   \
 		if (debug_level >= LOG_LVL_DEBUG_IO)            \
 			log_printf_lf(LOG_LVL_DEBUG,                \
 						  __FILE__, __LINE__, __func__, \
-						  expr);                        \
+						  __VA_ARGS__);                 \
 	} while (0)
 
-#define LOG_DEBUG(expr...)                              \
+#define LOG_DEBUG(...)                                  \
 	do                                                  \
 	{                                                   \
 		if (debug_level >= LOG_LVL_DEBUG)               \
 			log_printf_lf(LOG_LVL_DEBUG,                \
 						  __FILE__, __LINE__, __func__, \
-						  expr);                        \
+						  __VA_ARGS__);                 \
 	} while (0)
 
-#define LOG_INFO(expr...) \
-	log_printf_lf(LOG_LVL_INFO, __FILE__, __LINE__, __func__, expr)
+#define LOG_INFO(...) \
+	log_printf_lf(LOG_LVL_INFO, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-#define LOG_WARNING(expr...) \
-	log_printf_lf(LOG_LVL_WARNING, __FILE__, __LINE__, __func__, expr)
+#define LOG_WARNING(...) \
+	log_printf_lf(LOG_LVL_WARNING, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-#define LOG_ERROR(expr...) \
-	log_printf_lf(LOG_LVL_ERROR, __FILE__, __LINE__, __func__, expr)
+#define LOG_ERROR(...) \
+	log_printf_lf(LOG_LVL_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-#define LOG_USER(expr...) \
-	log_printf_lf(LOG_LVL_USER, __FILE__, __LINE__, __func__, expr)
+#define LOG_USER(...) \
+	log_printf_lf(LOG_LVL_USER, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-#define LOG_USER_N(expr...) \
-	log_printf(LOG_LVL_USER, __FILE__, __LINE__, __func__, expr)
+#define LOG_USER_N(...) \
+	log_printf(LOG_LVL_USER, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-#define LOG_OUTPUT(expr...) \
-	log_printf(LOG_LVL_OUTPUT, __FILE__, __LINE__, __func__, expr)
+#define LOG_OUTPUT(...) \
+	log_printf(LOG_LVL_OUTPUT, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 /* Output a log entry that is related to a given target */
 

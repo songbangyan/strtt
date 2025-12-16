@@ -67,9 +67,15 @@ struct sockaddr_un
 #endif
 
 /* GNU extensions to the C library that may be missing on some systems */
-#ifdef __MINGW32__
+#ifdef _WIN32
 char *strndup(const char *s, size_t n);
-#endif	/* HAVE_STRNDUP */
+
+/* usleep is not available on Windows - use Sleep which takes milliseconds */
+static inline void usleep(unsigned int usec)
+{
+	Sleep((usec + 999) / 1000);  /* Convert microseconds to milliseconds, round up */
+}
+#endif
 
 
 #if IS_MINGW == 1

@@ -1,7 +1,8 @@
 #include "helper_types.h"
 #include "helper_replacements.h"
 
-#ifdef __MINGW32__
+/* strndup is not available in MSVC or MinGW */
+#ifdef _WIN32
 char *strndup(const char *s, size_t n)
 {
 	size_t len = strnlen(s, n);
