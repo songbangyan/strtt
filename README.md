@@ -13,9 +13,10 @@ Options:
 
 **-ap** select the AP number to use (default 0), some devices have multiple APs, for example STM32H5 and STM32H7 need set AP to 1.
 
-# Windows
+# Executable
 
-Folder windows_bin_64 includes windows 64 bit executable. If the program returns immediately try to run it with -v 4 option. Return value (-4) indicates missing stlink drivers available as STSW-LINK009 from st.com.
+Can be found [here](https://github.com/phryniszak/strtt/releases).
+
 
 # Using with STM32CubeIDE
 
