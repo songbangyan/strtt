@@ -17,8 +17,6 @@ extern "C"
 #define STLINK_V3S_PID (0x374F)
 #define STLINK_V3_2VCP_PID (0x3753)
 #define STLINK_V3E_NO_MSD_PID (0x3754)
-#define STLINK_V3P_USBLOADER_PID (0x3755)
-#define STLINK_V3P_PID           (0x3757)
 #define STLINK_VID (0x0483)
 
     /** */
@@ -81,6 +79,7 @@ extern "C"
         bool use_stlink_tcp;
         /** */
         uint16_t stlink_tcp_port;
+        uint8_t ap_num;
     };
 
     struct hl_interface_s
