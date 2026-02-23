@@ -37,7 +37,7 @@
  *
  */
 StRtt::StRtt(uint32_t start, uint8_t apNum)
-    :    ramStart(start), apNum(apNum)
+    : ramStart(start), apNum(apNum)
 {
     this->init();
 }
@@ -63,7 +63,9 @@ void StRtt::init()
     this->_param.transport = hl_transports::HL_TRANSPORT_SWD;
 
     std::vector<uint16_t> pids{STLINK_V2_PID, STLINK_V2_1_PID, STLINK_V2_1_NO_MSD_PID,
-                               STLINK_V3_USBLOADER_PID, STLINK_V3E_PID, STLINK_V3S_PID, STLINK_V3_2VCP_PID, STLINK_V3E_NO_MSD_PID};
+                               STLINK_V3_USBLOADER_PID, STLINK_V3E_PID, STLINK_V3S_PID,
+                               STLINK_V3_2VCP_PID, STLINK_V3E_NO_MSD_PID, STLINK_V3P_USBLOADER_PID,
+                               STLINK_V3P_PID};
 
     for (std::size_t i = 0; i < HLA_MAX_USB_IDS; ++i)
     {
@@ -336,16 +338,16 @@ int StRtt::readRtt()
 }
 
 /*********************************************************************
-*    Reads characters from SEGGER real-time-terminal control block
-*    which have been previously stored by the uc.
-*
-*  Parameters
-*    BufferIndex  Index of Down-buffer to be used (e.g. 0 for "Terminal").
-*    buffer       std::vector<uint8_t> with size at least of size of chanel
-*
-*  Return value
-*    Number of bytes that have been read.
-*/
+ *    Reads characters from SEGGER real-time-terminal control block
+ *    which have been previously stored by the uc.
+ *
+ *  Parameters
+ *    BufferIndex  Index of Down-buffer to be used (e.g. 0 for "Terminal").
+ *    buffer       std::vector<uint8_t> with size at least of size of chanel
+ *
+ *  Return value
+ *    Number of bytes that have been read.
+ */
 int StRtt::readRttFromBuff(int index, std::vector<uint8_t> *buffer)
 {
     SEGGER_RTT_BUFFER *pRing = &this->_rtt_info.pRttDescription->buffDesc[index];
@@ -474,19 +476,19 @@ int StRtt::writeRtt(int buffIndex, std::vector<uint8_t> *buffer)
 }
 
 /*********************************************************************
-*
-*       _GetAvailWriteSpace()
-*
-*  Function description
-*    Returns the number of bytes that can be written to the ring
-*    buffer without blocking.
-*
-*  Parameters
-*    pRing        Ring buffer to check.
-*
-*  Return value
-*    Number of bytes that are free in the buffer.
-*/
+ *
+ *       _GetAvailWriteSpace()
+ *
+ *  Function description
+ *    Returns the number of bytes that can be written to the ring
+ *    buffer without blocking.
+ *
+ *  Parameters
+ *    pRing        Ring buffer to check.
+ *
+ *  Return value
+ *    Number of bytes that are free in the buffer.
+ */
 unsigned StRtt::_GetAvailWriteSpace(SEGGER_RTT_BUFFER *pRing)
 {
     unsigned RdOff;
