@@ -49,8 +49,7 @@
                 "32",
                 "-v",
                 "4",
-                "-tcp",
-                "-t"
+                "-rtcp",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

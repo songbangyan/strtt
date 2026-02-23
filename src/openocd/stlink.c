@@ -169,6 +169,14 @@ struct stlink_usb_priv_s
 	struct libusb_transfer *trans;
 };
 
+struct stlink_tcp_version_s
+{
+	uint32_t api;
+	uint32_t major;
+	uint32_t minor;
+	uint32_t build;
+};
+
 struct stlink_tcp_priv_s
 {
 	/** */
@@ -183,6 +191,8 @@ struct stlink_tcp_priv_s
 	uint8_t *send_buf;
 	/** */
 	uint8_t *recv_buf;
+	/** */
+	struct stlink_tcp_version_s version;
 };
 
 struct stlink_backend_s
@@ -485,7 +495,7 @@ static inline int stlink_usb_xfer_noerrcheck(void *handle, const uint8_t *buf, i
 #define STLINK_DEBUG_PORT_ACCESS 0xffff
 
 #define STLINK_TRACE_SIZE 4096
-#define STLINK_TRACE_MAX_HZ 2000000
+#define STLINK_TRACE_MAX_HZ 2250000
 #define STLINK_V3_TRACE_MAX_HZ 24000000
 
 #define STLINK_V3_MAX_FREQ_NB 10
@@ -524,6 +534,8 @@ static inline int stlink_usb_xfer_noerrcheck(void *handle, const uint8_t *buf, i
 #define STLINK_TCP_SS_CMD_NOT_AVAILABLE 0x00001053
 #define STLINK_TCP_SS_TCP_ERROR 0x00002001
 #define STLINK_TCP_SS_TCP_CANT_CONNECT 0x00002002
+#define STLINK_TCP_SS_TCP_CLOSE_ERROR 0x00002003
+#define STLINK_TCP_SS_TCP_BUSY 0x00002004
 #define STLINK_TCP_SS_WIN32_ERROR 0x00010000
 
 /*
@@ -1020,6 +1032,11 @@ static int stlink_tcp_send_cmd(void *handle, int send_size, int recv_size, bool 
 		uint32_t tcp_ss = le_to_h_u32(h->tcp_backend_priv.recv_buf);
 		if (tcp_ss != STLINK_TCP_SS_OK)
 		{
+			if (tcp_ss == STLINK_TCP_SS_TCP_BUSY)
+			{
+				LOG_DEBUG("TCP busy");
+				return ERROR_WAIT;
+			}
 			LOG_ERROR("TCP error status 0x%X", tcp_ss);
 			return ERROR_FAIL;
 		}
@@ -1367,8 +1384,8 @@ static int stlink_usb_version(void *handle)
 		break;
 	}
 
-	/* STLINK-V3 requires a specific command */
-	if (v == 3 && x == 0 && y == 0)
+	/* STLINK-V3 & STLINK-V3P require a specific command */
+	if (v >= 3 && x == 0 && y == 0)
 	{
 		stlink_usb_init_buffer(handle, h->rx_ep, 16);
 
@@ -1486,6 +1503,21 @@ static int stlink_usb_version(void *handle)
 		/* 8bit read/write max packet size 512 bytes from V3J6 */
 		if (h->version.jtag >= 6)
 			flags |= STLINK_F_HAS_RW8_512BYTES;
+
+		break;
+	case 4:
+		/* STLINK-V3P use api-v3 */
+		h->version.jtag_api = STLINK_JTAG_API_V3;
+
+		/* STLINK-V3P is a superset of ST-LINK/V3 */
+		flags |= STLINK_F_HAS_TRACE;
+		flags |= STLINK_F_HAS_GETLASTRWSTATUS2;
+		flags |= STLINK_F_HAS_DAP_REG;
+		flags |= STLINK_F_HAS_MEM_16BIT;
+		flags |= STLINK_F_HAS_AP_INIT;
+		flags |= STLINK_F_FIX_CLOSE_AP;
+		flags |= STLINK_F_HAS_DPBANKSEL;
+		flags |= STLINK_F_HAS_RW8_512BYTES;
 
 		break;
 	default:
@@ -3568,7 +3600,7 @@ static int stlink_speed(void *handle, int khz, bool query)
 	struct stlink_usb_handle_s *h = handle;
 
 	if (!handle)
-		return ERROR_OK;
+		return khz;
 
 	switch (h->st_mode)
 	{
@@ -3812,6 +3844,8 @@ static int stlink_usb_usb_open(void *handle, struct hl_interface_param_s *param)
 		case STLINK_V3S_PID:
 		case STLINK_V3_2VCP_PID:
 		case STLINK_V3E_NO_MSD_PID:
+		case STLINK_V3P_USBLOADER_PID:
+		case STLINK_V3P_PID:
 			h->version.stlink = 3;
 			h->tx_ep = STLINK_V2_1_TX_EP;
 			h->trace_ep = STLINK_V2_1_TRACE_EP;
@@ -3998,16 +4032,19 @@ static int stlink_tcp_open(void *handle, struct hl_interface_param_s *param)
 		return ERROR_FAIL;
 	}
 
-	uint32_t api_ver = le_to_h_u32(&h->tcp_backend_priv.recv_buf[0]);
-	uint32_t ver_major = le_to_h_u32(&h->tcp_backend_priv.recv_buf[4]);
-	uint32_t ver_minor = le_to_h_u32(&h->tcp_backend_priv.recv_buf[8]);
-	uint32_t ver_build = le_to_h_u32(&h->tcp_backend_priv.recv_buf[12]);
+	h->tcp_backend_priv.version.api   = le_to_h_u32(&h->tcp_backend_priv.recv_buf[0]);
+	h->tcp_backend_priv.version.major = le_to_h_u32(&h->tcp_backend_priv.recv_buf[4]);
+	h->tcp_backend_priv.version.minor = le_to_h_u32(&h->tcp_backend_priv.recv_buf[8]);
+	h->tcp_backend_priv.version.build = le_to_h_u32(&h->tcp_backend_priv.recv_buf[12]);
 	LOG_INFO("stlink-server API v%d, version %d.%d.%d",
-			 api_ver, ver_major, ver_minor, ver_build);
+			 h->tcp_backend_priv.version.api,
+			 h->tcp_backend_priv.version.major,
+			 h->tcp_backend_priv.version.minor,
+			 h->tcp_backend_priv.version.build);
 
 	/* in stlink-server API v1 sending more than 1428 bytes will cause stlink-server
 	 * to crash in windows: select a safe default value (1K) */
-	if (api_ver < 2)
+	if (h->tcp_backend_priv.version.api < 2)
 		h->max_mem_packet = (1 << 10);
 
 	/* refresh stlink list (re-enumerate) */
