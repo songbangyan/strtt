@@ -1,6 +1,8 @@
 #include <atomic>
 #include <vector>
 #include <chrono>
+#include <memory>
+
 #include <signal.h>
 
 #include "strtt.h"
@@ -44,85 +46,102 @@ void signalHandler(int signum)
     stopApp = true;
 }
 
+static void showArgs(const std::string& progName)
+{
+    std::cout << "usage: " << progName << " [OPTIONS]" << std::endl;
+    std::cout << "  -v number\t ... verbosity (debug level) 0..4" << std::endl;
+    std::cout << "  -ramsize size\t ... size of RAM, e.g. 0x2000" << std::endl;
+    std::cout << "  -ramstart address ... start address of RAM, e.g. 0x08000000" << std::endl;
+    std::cout << "  -port number\t ... port number for TCP connection" << std::endl;
+    std::cout << "  -t\t\t ... show cycle time " << std::endl;
+    std::cout << "  -tcp\t\t ... use TCP connection " << std::endl;
+    std::cout << "  -ap number\t ... accessport number" << std::endl;
+}
+
 // INFO:
 // https://stackoverflow.com/questions/12207684/how-do-i-terminate-a-thread-in-c11
 // https://www.bo-yang.net/2017/11/19/cpp-kill-detached-thread
 
 int main(int argc, char **argv)
 {
-
 #ifdef __linux__
     // Opportunistic call to renice us, so we can keep up under
     // higher load conditions. This may fail when run as non-root.
     setpriority(PRIO_PROCESS, 0, -11);
 #endif
 
-    InputParser input(argc, argv);
-
     signal(SIGINT, signalHandler);
-
     log_init();
-    debug_level = LOG_LVL_SILENT;
 
-    if (input.cmdOptionExists("-v"))
-    {
-        debug_level = std::stoi(input.getCmdOption("-v"));
-    }
-
-    int _ramKB = 16;
-    if (input.cmdOptionExists("-ramsize"))
-    {
-        std::string opt = input.getCmdOption("-ramsize");
-        if (opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X'))
-        {
-            _ramKB = std::stoi(opt, nullptr, 16);
-        }
-        else
-        {
-            _ramKB = std::stoi(opt, nullptr, 0);
+    for( uint32_t i = 1; i < argc; ++i ) {
+        if( strcmp(argv[i], "--help") == 0 ) {
+            showArgs(argv[0]);
+            return EXIT_SUCCESS;
         }
     }
 
-    int port = SYSVIEW_COMM_SERVER_PORT;
-    if (input.cmdOptionExists("-port"))
-    {
-        port = std::stoi(input.getCmdOption("-port"));
-    }
+    debug_level            = LOG_LVL_SILENT;
+    int      _ramKB        = 16;
+    int      port          = SYSVIEW_COMM_SERVER_PORT;
+    uint32_t _ramStart     = RAM_START;
+    uint8_t  apNum         = 0;
+    bool     useTCP        = false;
+    bool     showCycleTime = false;
 
-    uint32_t _ramStart = RAM_START;
-    if (input.cmdOptionExists("-ramstart"))
-    {
-        // get ram start from options, value maybe hex or dec
-        std::string opt = input.getCmdOption("-ramstart");
-        if (opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X'))
-        {
-            _ramStart = std::stoi(opt, nullptr, 16);
+    auto handleOptions = [&argc, argv, &_ramKB, &port, &_ramStart, &apNum, &useTCP, &showCycleTime]() {
+        InputParser input(argc, argv);
+
+        if( input.cmdOptionExists("-v") ) {
+            debug_level = std::stoi(input.getCmdOption("-v"));
         }
-        else
-        {
-            _ramStart = std::stoi(opt, nullptr, 0);
+
+        if( input.cmdOptionExists("-ramsize") ) {
+            std::string opt = input.getCmdOption("-ramsize");
+            if( opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X') ) {
+                _ramKB = std::stoi(opt, nullptr, 16);
+            }
+            else {
+                _ramKB = std::stoi(opt, nullptr, 0);
+            }
         }
+
+        if( input.cmdOptionExists("-port") ) {
+            port = std::stoi(input.getCmdOption("-port"));
+        }
+
+        if( input.cmdOptionExists("-ramstart") ) {
+            // get ram start from options, value maybe hex or dec
+            std::string opt = input.getCmdOption("-ramstart");
+            if( opt.size() > 1 && opt[0] == '0' && (opt[1] == 'x' || opt[1] == 'X') ) {
+                _ramStart = std::stoi(opt, nullptr, 16);
+            }
+            else {
+                _ramStart = std::stoi(opt, nullptr, 0);
+            }
+        }
+
+        if( input.cmdOptionExists("-t") ) {
+            showCycleTime = true;
+        }
+
+        if( input.cmdOptionExists("-tcp") ) {
+            useTCP = true;
+        }
+
+        if( input.cmdOptionExists("-ap") ) {
+            apNum = std::stoi(input.getCmdOption("-ap"));
+        }
+    };
+
+    try {
+        handleOptions();
+    } catch( const std::exception& e ) {
+        std::cerr << "ERROR parsing command-line args:" << e.what() << std::endl;
+        showArgs(argv[0]);
+        return EXIT_FAILURE;
     }
 
-    bool showCycleTime = false;
-    if (input.cmdOptionExists("-t"))
-    {
-        showCycleTime = true;
-    }
-
-    bool useTCP = false;
-    if (input.cmdOptionExists("-tcp"))
-    {
-        useTCP = true;
-    }
-
-    uint8_t apNum = 0;
-    if (input.cmdOptionExists("-ap"))
-    {
-        apNum = std::stoi(input.getCmdOption("-ap"));
-    }
-
-    StRtt *strtt = new StRtt(_ramStart, apNum);
+    auto strtt = std::make_unique<StRtt>(_ramStart, apNum);
 
     // open stLink
     int res = strtt->open(useTCP);
@@ -222,6 +241,5 @@ int main(int argc, char **argv)
         }
     }
 
-    strtt->close();
     return 0;
 }
