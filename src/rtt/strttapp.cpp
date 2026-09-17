@@ -2,6 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <memory>
+#include <thread>
 
 #include <signal.h>
 
@@ -25,6 +26,11 @@
 // CONST //////////////////////////////////////////////////
 
 const int SYSVIEW_COMM_SERVER_PORT = 19111; // the port users will be connecting to
+
+// OpenOCD paces its RTT polling with a timer callback (see rtt_set_polling_interval)
+// instead of a busy loop; without an equivalent pause here the loop below spins
+// unthrottled and pegs a CPU core (see issue #21)
+const int DEFAULT_POLLING_INTERVAL_MS = 1;
 
 // GLOBAL VARIABLES ///////////////////////////////////////
 
@@ -58,6 +64,7 @@ static void showArgs(const std::string& progName)
     std::cout << "  -tcp\t\t ... use TCP connection " << std::endl;
     std::cout << "  -ap number\t ... accessport number" << std::endl;
     std::cout << "  -serial string\t ... ST-LINK serial number to connect to" << std::endl;
+    std::cout << "  -interval number ... RTT polling interval in ms (default " << DEFAULT_POLLING_INTERVAL_MS << ")" << std::endl;
 }
 
 // INFO:
@@ -90,8 +97,9 @@ int main(int argc, char **argv)
     bool        useTCP        = false;
     bool        showCycleTime = false;
     std::string serial;
+    int         pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
 
-    auto handleOptions = [&argc, argv, &_ramKB, &port, &_ramStart, &apNum, &useTCP, &showCycleTime, &serial]() {
+    auto handleOptions = [&argc, argv, &_ramKB, &port, &_ramStart, &apNum, &useTCP, &showCycleTime, &serial, &pollingIntervalMs]() {
         InputParser input(argc, argv);
 
         if( input.cmdOptionExists("-v") ) {
@@ -137,6 +145,10 @@ int main(int argc, char **argv)
 
         if( input.cmdOptionExists("-serial") ) {
             serial = input.getCmdOption("-serial");
+        }
+
+        if( input.cmdOptionExists("-interval") ) {
+            pollingIntervalMs = std::stoi(input.getCmdOption("-interval"));
         }
     };
 
@@ -209,6 +221,7 @@ int main(int argc, char **argv)
     ConsoleInput console;
     std::vector<uint8_t> str;
     double _duration;
+    const std::chrono::milliseconds pollingInterval(pollingIntervalMs);
     while (!stopApp)
     {
         START_TS;
@@ -249,6 +262,8 @@ int main(int argc, char **argv)
             STOP_TS;
             LOG_USER("Cycle time: %dms", (int)_duration);
         }
+
+        std::this_thread::sleep_for(pollingInterval);
     }
 
     return 0;

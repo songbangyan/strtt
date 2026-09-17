@@ -15,6 +15,8 @@ Options:
 
 **-serial** ST-LINK serial number to connect to. Useful when multiple ST-LINK probes are connected at the same time.
 
+**-interval** RTT polling interval in ms (default 1). Raise this if strtt is using too much CPU, e.g. when sharing the ST-LINK with a debug session over **-tcp**.
+
 # Executable
 
 Can be found [here](https://github.com/phryniszak/strtt/releases).
